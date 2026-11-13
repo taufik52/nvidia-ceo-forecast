@@ -34,7 +34,7 @@ under a second.
   across markets (a 0.30 favourite moves in whole cents; a 0.003
   longshot barely moves) and across regimes, so the spread is
   re-estimated from each case's own history: the 90th percentile of the
-  absolute one-minute price changes over the last 12 and 24 hours,
+  absolute one-minute price changes over the last 3 and 12 hours,
   converted to a per-root-minute sigma (÷ 1.644854), averaged over the
   two windows and shrunk by 0.75, clamped to [0.0003, 0.006]. A plain
   standard deviation is dominated by the rare huge jumps (up to 0.48 in
@@ -58,7 +58,7 @@ prices minute-for-minute on the overlap).
 | program | mean pinball loss |
 |---|---|
 | house baseline (fixed sigma 0.0025) | 0.333 |
-| this program | 0.235 |
+| this program | 0.231 |
 
 It beats the baseline in every one of the eight windows (practice
 mean 0.287 vs the house baseline's 0.364) and in every horizon bucket.

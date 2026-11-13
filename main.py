@@ -20,7 +20,7 @@ the checkpoint as a set of five quantiles (0.05, 0.25, 0.5, 0.75, 0.95).
   whole cents; a 0.003 longshot barely moves at all) and across regimes
   (the market was far more jumpy on 11 Nov than on 13 Nov). We use a
   *robust* scale, not a standard deviation: the 90th percentile of the
-  absolute one-minute price changes over the last 12 and 24 hours,
+  absolute one-minute price changes over the last 3 and 12 hours,
   converted to a per-root-minute sigma by dividing by the normal 90th
   percentile (1.644854), averaged over the two windows and shrunk by 0.75.
   A plain standard deviation is dominated by the rare huge jumps (up to
@@ -46,7 +46,7 @@ reproduced the house's own practice prices minute-for-minute on the
 overlap, 0 differences).
 
     house baseline (fixed sigma 0.0025):  0.333
-    this program:                         0.235
+    this program:                         0.231
 
 It beats the baseline in every one of the eight windows and in every
 horizon bucket (first hour / middle / last hour).
@@ -72,7 +72,10 @@ INPUT_DIR = os.environ.get("MAKEFUN_INPUT_DIR", "/input")
 OUTPUT_DIR = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
 
 # Robust-scale windows (minutes of one-minute changes) and shrinkage.
-WINDOWS = (720, 1440)
+# A short 3-hour window lets sigma track the *current* volatility regime
+# (volatility collapsed over the backtest period, and a market that starts
+# moving should widen fast); the 12-hour window keeps the estimate stable.
+WINDOWS = (180, 720)
 SHRINK = 0.75
 SIGMA_FLOOR = 0.0003
 SIGMA_CAP = 0.006
