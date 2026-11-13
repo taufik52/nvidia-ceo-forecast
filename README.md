@@ -24,7 +24,7 @@ mkdir -p out && MAKEFUN_INPUT_DIR=input MAKEFUN_OUTPUT_DIR=out python3 main.py
 Python 3.13, standard library only, no network. One case takes well
 under a second.
 
-## Approach
+## Approach (v2)
 
 - **Median: persistence.** The last observed price is carried forward.
   Prediction-market prices are (close to) martingales at this horizon:
@@ -36,14 +36,25 @@ under a second.
   re-estimated from each case's own history: the 90th percentile of the
   absolute one-minute price changes over the last 3 and 12 hours,
   converted to a per-root-minute sigma (÷ 1.644854), averaged over the
-  two windows and shrunk by 0.75, clamped to [0.0003, 0.006]. A plain
+  two windows and shrunk by 0.70, clamped to [0.0003, 0.006]. A plain
   standard deviation is dominated by the rare huge jumps (up to 0.48 in
   a minute in the early history) and makes the forecast far too wide;
   the robust scale tracks the typical minute instead.
 - **Shape:** normal quantiles widening with `sqrt(horizon)`:
-  `q_tau(h) = clamp(x + z_tau * sigma * sqrt(h), 0, 1)`, rounded to
-  6 decimals. Heavier-tailed (Student-t) variants scored worse in
-  backtests.
+  `q_tau(h) = clamp(x + z_tau * sigma * sqrt(h), 0, 1)`. Heavier-tailed
+  (Student-t) variants scored worse in backtests.
+- **Cross-market correction (new in v2): sum-to-one.** The 24 markets
+  are mutually exclusive outcomes of one question, so their true
+  probabilities sum to 1 — but the observed sum of last prices drifts
+  from 1 (0.81–1.09 across backtest windows) through market noise.
+  Since the median carries most of the pinball loss, the medians are
+  shrunk 40% of the way toward sum = 1: `f = 1 + 0.4 * (1/s - 1)` where
+  `s` is the sum of last prices, and every quantile of a market is
+  shifted by `x * (f - 1)` (multiplicative, so the spread is preserved
+  and tiny-priced markets barely move). The correction is
+  horizon-independent and is small exactly when the market is already
+  coherent (calm windows, sum near 1), and large exactly when the
+  market is incoherent (jumpy windows) — where it helps most.
 
 ## Backtest
 
@@ -58,11 +69,14 @@ prices minute-for-minute on the overlap).
 | program | mean pinball loss |
 |---|---|
 | house baseline (fixed sigma 0.0025) | 0.333 |
-| this program | 0.231 |
+| v1 (round 1 submission) | 0.231 |
+| **v2 (this program)** | **0.225** |
 
-It beats the baseline in every one of the eight windows (practice
-mean 0.287 vs the house baseline's 0.364) and in every horizon bucket.
-Output is deterministic: a pure function of the input file, byte-identical
+v2 improves v1 by ~2.7% overall, concentrated where v1 was weakest:
+the jumpy regime (p00 0.456 → 0.420, p02 0.362 → 0.352) and neutral
+(≤ 0.001) in the calm windows. It beats the baseline in every one of
+the eight windows and in every horizon bucket. Output is
+deterministic: a pure function of the input file, byte-identical
 across runs.
 
 ## License
